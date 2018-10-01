@@ -84,7 +84,7 @@ import org.kohsuke.stapler.StaplerResponse;
  * Information about a Hudson agent node.
  *
  * <p>
- * Ideally this would have been in the <tt>hudson.slaves</tt> package,
+ * Ideally this would have been in the {@code hudson.slaves} package,
  * but for compatibility reasons, it can't.
  *
  * <p>
@@ -146,8 +146,8 @@ public abstract class Slave extends Node implements Serializable {
      */
     private String label="";
 
-    private /*almost final*/ DescribableList<NodeProperty<?>,NodePropertyDescriptor> nodeProperties = 
-                                    new DescribableList<NodeProperty<?>,NodePropertyDescriptor>(Jenkins.getInstance().getNodesObject());
+    private /*almost final*/ DescribableList<NodeProperty<?>,NodePropertyDescriptor> nodeProperties =
+            new DescribableList<>(this);
 
     /**
      * Lazily computed set of labels from {@link #label}.
@@ -529,7 +529,12 @@ public abstract class Slave extends Node implements Serializable {
 
     /**
      * Gets the corresponding computer object.
+     *
+     * @return
+     *      this method can return null if there's no {@link Computer} object for this node,
+     *      such as when this node has no executors at all.
      */
+    @CheckForNull
     public SlaveComputer getComputer() {
         return (SlaveComputer)toComputer();
     }
@@ -554,7 +559,7 @@ public abstract class Slave extends Node implements Serializable {
      */
     protected Object readResolve() {
         if(nodeProperties==null)
-            nodeProperties = new DescribableList<NodeProperty<?>,NodePropertyDescriptor>(Jenkins.getInstance().getNodesObject());
+            nodeProperties = new DescribableList<>(this);
         return this;
     }
 

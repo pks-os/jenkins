@@ -74,6 +74,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -88,9 +91,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FileUtils;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
@@ -138,7 +138,7 @@ public class Util {
     private static final Pattern VARIABLE = Pattern.compile("\\$([A-Za-z0-9_]+|\\{[A-Za-z0-9_.]+\\}|\\$)");
 
     /**
-     * Replaces the occurrence of '$key' by <tt>properties.get('key')</tt>.
+     * Replaces the occurrence of '$key' by {@code properties.get('key')}.
      *
      * <p>
      * Unlike shell, undefined variables are left as-is (this behavior is the same as Ant.)
@@ -150,7 +150,7 @@ public class Util {
     }
 
     /**
-     * Replaces the occurrence of '$key' by <tt>resolver.get('key')</tt>.
+     * Replaces the occurrence of '$key' by {@code resolver.get('key')}.
      *
      * <p>
      * Unlike shell, undefined variables are left as-is (this behavior is the same as Ant.)
@@ -1195,8 +1195,16 @@ public class Util {
      */
     @Nonnull
     public static String fixNull(@CheckForNull String s) {
-        if(s==null)     return "";
-        else            return s;
+        return fixNull(s, "");
+    }
+
+    /**
+     * Convert {@code null} to a default value.
+     * @since TODO
+     */
+    @Nonnull
+    public static <T> T fixNull(@CheckForNull T s, @Nonnull T defaultValue) {
+        return s != null ? s : defaultValue;
     }
 
     /**
@@ -1221,22 +1229,22 @@ public class Util {
 
     @Nonnull
     public static <T> List<T> fixNull(@CheckForNull List<T> l) {
-        return l!=null ? l : Collections.<T>emptyList();
+        return fixNull(l, Collections.<T>emptyList());
     }
 
     @Nonnull
     public static <T> Set<T> fixNull(@CheckForNull Set<T> l) {
-        return l!=null ? l : Collections.<T>emptySet();
+        return fixNull(l, Collections.<T>emptySet());
     }
 
     @Nonnull
     public static <T> Collection<T> fixNull(@CheckForNull Collection<T> l) {
-        return l!=null ? l : Collections.<T>emptySet();
+        return fixNull(l, Collections.<T>emptySet());
     }
 
     @Nonnull
     public static <T> Iterable<T> fixNull(@CheckForNull Iterable<T> l) {
-        return l!=null ? l : Collections.<T>emptySet();
+        return fixNull(l, Collections.<T>emptySet());
     }
 
     /**
@@ -1662,7 +1670,28 @@ public class Util {
             throw new IOException(e);
         }
     }
-
+    
+    /**
+     * Compute the number of calendar days elapsed since the given date.
+     * As it's only the calendar days difference that matter, "11.00pm" to "2.00am the day after" returns 1,
+     * even if there are only 3 hours between. As well as "10am" to "2pm" both on the same day, returns 0.
+     */
+    @Restricted(NoExternalUse.class)
+    public static long daysBetween(@Nonnull Date a, @Nonnull Date b){
+        LocalDate aLocal = a.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate bLocal = b.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        return ChronoUnit.DAYS.between(aLocal, bLocal);
+    }
+    
+    /**
+     * @return positive number of days between the given date and now
+     * @see #daysBetween(Date, Date)
+     */
+    @Restricted(NoExternalUse.class)
+    public static long daysElapsedSince(@Nonnull Date date){
+        return Math.max(0, daysBetween(date, new Date()));
+    }
+    
     public static final FastDateFormat XS_DATETIME_FORMATTER = FastDateFormat.getInstance("yyyy-MM-dd'T'HH:mm:ss'Z'",new SimpleTimeZone(0,"GMT"));
 
     // Note: RFC822 dates must not be localized!
